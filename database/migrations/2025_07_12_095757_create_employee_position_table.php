@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('employee_position', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('employee_id')->constrained()->onDelete('cascade');
+            $table->foreignId('position_id')->constrained()->onDelete('cascade');
+            $table->boolean('is_primary')->default(true); // Primary or acting
             $table->timestamps();
         });
     }
