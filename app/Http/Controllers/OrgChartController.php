@@ -2,51 +2,40 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Position;
 use Illuminate\Http\Request;
+use App\Models\Position;
+use App\Models\Employee;
 
 class OrgChartController extends Controller
 {
-    // 1. Fetch org chart as a tree
     public function index()
     {
-        $tree = Position::with(['children', 'employees'])
-            ->whereNull('parent_id')
-            ->get();
+        // Get the root node (parent_id is null)
+        $root = Position::with(['employees', 'children.children.children.employees'])->whereNull('parent_id')->first();
 
-        return response()->json($tree);
+        if (!$root) {
+            return response()->json([]);
+        }
+
+        $flatTree = $this->flattenTree($root);
+        return response()->json($flatTree);
     }
 
-    // 2. Store new position
-    public function store(Request $request)
+    private function flattenTree($node, $parentId = null, &$result = [])
     {
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'department_id' => 'required|exists:departments,id',
-            'parent_id' => 'nullable|exists:positions,id',
-        ]);
+        $employeeName = $node->employees->first()?->name ?? 'Unknown';
 
-        $position = Position::create($request->only('title', 'department_id', 'parent_id'));
+        $result[] = [
+            'id' => $node->id,
+            'pid' => $parentId,
+            'name' => $employeeName,
+            'title' => $node->title,
+        ];
 
-        return response()->json($position, 201);
-    }
+        foreach ($node->children as $child) {
+            $this->flattenTree($child, $node->id, $result);
+        }
 
-    // 3. Update position
-    public function update(Request $request, $id)
-    {
-        $position = Position::findOrFail($id);
-
-        $position->update($request->only('title', 'department_id', 'parent_id'));
-
-        return response()->json($position);
-    }
-
-    // 4. Delete position
-    public function destroy($id)
-    {
-        $position = Position::findOrFail($id);
-        $position->delete();
-
-        return response()->json(['message' => 'Position deleted']);
+        return $result;
     }
 }
