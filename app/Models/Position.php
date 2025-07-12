@@ -10,6 +10,7 @@ class Position extends Model
     use HasFactory;
 
     protected $fillable = ['title', 'department_id', 'parent_id'];
+    protected $appends = ['employee_names'];
 
     public function department()
     {
@@ -31,5 +32,10 @@ class Position extends Model
         return $this->belongsToMany(Employee::class)
                     ->withPivot('is_primary')
                     ->withTimestamps();
+    }
+
+    public function getEmployeeNamesAttribute()
+    {
+        return $this->employees->pluck('name');
     }
 }
