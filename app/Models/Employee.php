@@ -13,7 +13,7 @@ class Employee extends Model
 
     public function positions()
     {
-        return $this->belongsToMany(Position::class)
+        return $this->belongsToMany(Position::class, 'employee_position')
                     ->withPivot('is_primary')
                     ->withTimestamps();
     }
