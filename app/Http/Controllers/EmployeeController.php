@@ -8,9 +8,31 @@ use Illuminate\Http\Request;
 
 class EmployeeController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $employees = Employee::with('positions')->get();
+        $sortField = $request->get('sort', 'name');
+        $sortDirection = $request->get('direction', 'asc');
+
+        $employees = Employee::select('employees.*')
+        ->leftJoin('employee_position as ep', function ($join) {
+            $join->on('employees.id', '=', 'ep.employee_id')
+                ->where('ep.is_primary', 1);
+        })
+        ->leftJoin('positions', 'ep.position_id', '=', 'positions.id')
+        ->with('positions')
+        ->when($request->search, function ($q) use ($request) {
+            $q->where(function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%')
+                ->orWhere('email', 'like', '%' . $request->search . '%');
+            });
+        })
+        ->orderBy(
+            $sortField === 'position_id' ? 'positions.title' : $sortField,
+            $sortDirection
+        )
+        ->paginate(10)
+        ->appends($request->only(['search', 'sort', 'direction']));
+
         return view('employees.index', compact('employees'));
     }
 
