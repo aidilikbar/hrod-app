@@ -30,8 +30,8 @@ class Position extends Model
     public function employees()
     {
         return $this->belongsToMany(Employee::class, 'employee_position')
-                    ->withPivot('is_primary')
-                    ->withTimestamps();
+            ->withPivot('is_primary')
+            ->withTimestamps();
     }
 
     public function getEmployeeNamesAttribute()

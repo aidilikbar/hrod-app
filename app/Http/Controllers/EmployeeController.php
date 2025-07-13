@@ -22,25 +22,45 @@ class EmployeeController extends Controller
 
     public function store(Request $request)
     {
-        $employee = Employee::create($request->only('name'));
-        $employee->positions()->attach($request->position_id, ['is_primary' => $request->is_primary ?? 1]);
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:employees,email',
+            'photo' => 'nullable|string|max:255',
+        ]);
 
-        return redirect()->route('employees.index');
+        Employee::create($validated);
+
+        return redirect()->route('employees.index')->with('success', 'Employee created successfully.');
     }
 
     public function edit(Employee $employee)
     {
         $positions = Position::all();
-        $employee->load('positions');
         return view('employees.edit', compact('employee', 'positions'));
     }
 
     public function update(Request $request, Employee $employee)
     {
-        $employee->update($request->only('name'));
-        $employee->positions()->sync([$request->position_id => ['is_primary' => $request->is_primary ?? 1]]);
+        $request->validate([
+            'name' => 'required',
+            'email' => 'required|email|unique:employees,email,' . $employee->id,
+            'photo' => 'nullable|image',
+            'position_id' => 'required|exists:positions,id',
+        ]);
 
-        return redirect()->route('employees.index');
+        $employee->update($request->only(['name', 'email']));
+
+        if ($request->hasFile('photo')) {
+            $path = $request->file('photo')->store('photos', 'public');
+            $employee->photo = $path;
+            $employee->save();
+        }
+
+        $employee->positions()->sync([
+            $request->position_id => ['is_primary' => true]
+        ]);
+
+        return redirect()->route('employees.index')->with('success', 'Employee updated successfully.');
     }
 
     public function destroy(Employee $employee)
