@@ -13,44 +13,60 @@ class EmployeeController extends Controller
         $sortField = $request->get('sort', 'name');
         $sortDirection = $request->get('direction', 'asc');
 
-        $employees = Employee::select('employees.*')
-        ->leftJoin('employee_position as ep', function ($join) {
-            $join->on('employees.id', '=', 'ep.employee_id')
-                ->where('ep.is_primary', 1);
-        })
-        ->leftJoin('positions', 'ep.position_id', '=', 'positions.id')
-        ->with('positions')
-        ->when($request->search, function ($q) use ($request) {
-            $q->where(function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%')
-                ->orWhere('email', 'like', '%' . $request->search . '%');
-            });
-        })
-        ->orderBy(
-            $sortField === 'position_id' ? 'positions.title' : $sortField,
-            $sortDirection
-        )
-        ->paginate(10)
-        ->appends($request->only(['search', 'sort', 'direction']));
+        $employees = Employee::select('employees.*', 'positions.title as position_title', 'departments.name as department_name')
+            ->leftJoin('employee_position as ep', function ($join) {
+                $join->on('employees.id', '=', 'ep.employee_id')
+                    ->where('ep.is_primary', 1);
+            })
+            ->leftJoin('positions', 'ep.position_id', '=', 'positions.id')
+            ->leftJoin('departments', 'positions.department_id', '=', 'departments.id')
+            ->when($request->search, function ($q) use ($request) {
+                $q->where(function ($q) use ($request) {
+                    $q->where('employees.name', 'like', '%' . $request->search . '%')
+                        ->orWhere('employees.email', 'like', '%' . $request->search . '%');
+                });
+            })
+            ->orderBy(
+                $sortField === 'position_title' ? 'positions.title' :
+                ($sortField === 'department_name' ? 'departments.name' : "employees.$sortField"),
+                $sortDirection
+            )
+            ->paginate(10)
+            ->appends($request->only(['search', 'sort', 'direction']));
 
         return view('employees.index', compact('employees'));
     }
 
     public function create()
     {
-        $positions = Position::all();
+        $positions = Position::with('department')->get();
         return view('employees.create', compact('positions'));
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:employees,email',
-            'photo' => 'nullable|string|max:255',
+            'position_id' => 'nullable|exists:positions,id',
+            'photo' => 'nullable|image|max:2048',
         ]);
 
-        Employee::create($validated);
+        $employee = new Employee();
+        $employee->name = $request->name;
+        $employee->email = $request->email;
+
+        if ($request->hasFile('photo')) {
+            $path = $request->file('photo')->store('photos', 'public');
+            $employee->photo = $path;
+        }
+
+        $employee->save();
+
+        // 👇 Attach the selected position as primary
+        if ($request->position_id) {
+            $employee->positions()->attach($request->position_id, ['is_primary' => true]);
+        }
 
         return redirect()->route('employees.index')->with('success', 'Employee created successfully.');
     }

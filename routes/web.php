@@ -26,6 +26,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/orgchart', function () {
         return view('orgchart');
     })->name('orgchart');
+    //Route::get('/orgchart', [OrgChartController::class, 'index'])->name('orgchart.index');
 });
 
 Route::middleware(['auth'])->group(function () {

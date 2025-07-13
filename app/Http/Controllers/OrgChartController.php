@@ -4,21 +4,26 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Position;
-use App\Models\Employee;
 
 class OrgChartController extends Controller
 {
     public function index()
     {
-        // Get the root node (parent_id is null)
-        $root = Position::with(['employees', 'children.children.children.employees'])->whereNull('parent_id')->first();
+        // Fetch all root positions (parent_id is null)
+        $roots = Position::with(['employees', 'children.children.children.employees'])
+                         ->whereNull('parent_id')
+                         ->get();
 
-        if (!$root) {
+        if ($roots->isEmpty()) {
             return response()->json([]);
         }
 
-        $flatTree = $this->flattenTree($root);
-        return response()->json($flatTree);
+        $allTrees = [];
+        foreach ($roots as $root) {
+            $this->flattenTree($root, null, $allTrees);
+        }
+
+        return response()->json($allTrees);
     }
 
     private function flattenTree($node, $parentId = null, &$result = [])

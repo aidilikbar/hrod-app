@@ -37,6 +37,7 @@
                         <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">{!! sortLink('name', 'Name') !!}</th>
                         <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">{!! sortLink('email', 'Email') !!}</th>
                         <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">{!! sortLink('position_id', 'Position') !!}</th>
+                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">{!! sortLink('department_id', 'Department') !!}</th>
                         <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
                     </tr>
                 </thead>
@@ -47,6 +48,9 @@
                             <td class="px-6 py-3">{{ $employee->email }}</td>
                             <td class="px-6 py-3">
                                 {{ $employee->positions->first()?->title ?? 'N/A' }}
+                            </td>
+                            <td class="px-6 py-3">
+                                {{ $employee->department_name ?? 'N/A' }}
                             </td>
                             <td class="px-6 py-3 space-x-3">
                                 <a href="{{ route('employees.edit', $employee) }}" class="text-blue-600 hover:underline">Edit</a>

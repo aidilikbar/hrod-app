@@ -28,13 +28,21 @@
                     {{-- Position --}}
                     <div class="mb-4">
                         <label for="position_id" class="block text-sm font-medium text-gray-700">Position</label>
-                        <select name="position_id" id="position_id" required
-                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        <select name="position_id" id="position_id" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" required>
                             <option value="">-- Select Position --</option>
                             @foreach ($positions as $position)
-                                <option value="{{ $position->id }}">{{ $position->title }}</option>
+                                <option value="{{ $position->id }}" data-department="{{ $position->department->name ?? '' }}">
+                                    {{ $position->title }}
+                                </option>
                             @endforeach
                         </select>
+                    </div>
+
+                    {{-- Department (auto-filled, disabled) --}}
+                    <div class="mb-4">
+                        <label for="photo" class="block text-sm font-medium text-gray-700">Department</label>
+                        <input type="text" name="department_name" id="department_name"
+                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" disabled/>
                     </div>
 
                     {{-- Photo --}}
@@ -52,6 +60,19 @@
                             class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Save</button>
                     </div>
                 </form>
+
+                <script>
+                    document.addEventListener("DOMContentLoaded", function () {
+                        const positionSelect = document.getElementById('position_id');
+                        const departmentInput = document.getElementById('department_name');
+
+                        positionSelect.addEventListener('change', function () {
+                            const selectedOption = this.options[this.selectedIndex];
+                            const department = selectedOption.getAttribute('data-department');
+                            departmentInput.value = department ?? '';
+                        });
+                    });
+                </script>
             </div>
         </div>
     </div>
