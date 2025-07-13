@@ -7,9 +7,22 @@ use Illuminate\Http\Request;
 
 class DepartmentController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $departments = Department::all();
+        $query = Department::query();
+
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        $sortField = $request->input('sort', 'name');
+        $sortDirection = $request->input('direction', 'asc');
+
+        $departments = $query
+            ->orderBy($sortField, $sortDirection)
+            ->paginate(10)
+            ->appends($request->only(['search', 'sort', 'direction']));
+
         return view('departments.index', compact('departments'));
     }
 
@@ -21,11 +34,11 @@ class DepartmentController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255'
+            'name' => 'required|string|max:255|unique:departments,name',
         ]);
 
         Department::create([
-            'name' => $request->name
+            'name' => $request->name,
         ]);
 
         return redirect()->route('departments.index')->with('success', 'Department created successfully.');
@@ -39,11 +52,11 @@ class DepartmentController extends Controller
     public function update(Request $request, Department $department)
     {
         $request->validate([
-            'name' => 'required|string|max:255'
+            'name' => 'required|string|max:255|unique:departments,name,' . $department->id,
         ]);
 
         $department->update([
-            'name' => $request->name
+            'name' => $request->name,
         ]);
 
         return redirect()->route('departments.index')->with('success', 'Department updated successfully.');
@@ -52,6 +65,7 @@ class DepartmentController extends Controller
     public function destroy(Department $department)
     {
         $department->delete();
+
         return redirect()->route('departments.index')->with('success', 'Department deleted successfully.');
     }
 }
