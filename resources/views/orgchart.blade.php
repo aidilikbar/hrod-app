@@ -1,44 +1,28 @@
 <x-app-layout>
-    <div class="p-6">
-        <h2 class="text-lg font-semibold mb-4">Organizational Chart</h2>
-        <div id="orgchart-wrapper"></div>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            {{ __('Organization Chart') }}
+        </h2>
+    </x-slot>
 
-        <script src="https://balkan.app/js/OrgChart.js"></script>
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                fetch("/api/orgchart") // Correct route
-                    .then(response => response.json())
-                    .then(data => {
-                        if (!data || data.length === 0) {
-                            document.getElementById("orgchart-wrapper").innerHTML = "<p>No organizational data found.</p>";
-                            return;
-                        }
-
-                        // Group nodes by root parent (nodes with pid == null)
-                        const roots = data.filter(node => node.pid === null);
-
-                        roots.forEach((root, index) => {
-                            const containerId = `orgchart-${index}`;
-                            const container = document.createElement("div");
-                            container.id = containerId;
-                            container.classList.add("mb-10");
-                            document.getElementById("orgchart-wrapper").appendChild(container);
-
-                            new OrgChart(document.getElementById(containerId), {
-                                nodes: data,
-                                nodeBinding: {
-                                    field_0: "title",
-                                    field_1: "name",
-                                },
-                                rootId: root.id,
-                            });
-                        });
-                    })
-                    .catch(error => {
-                        document.getElementById("orgchart-wrapper").innerHTML = "<p>Error loading chart data.</p>";
-                        console.error("Error fetching chart data:", error);
-                    });
-            });
-        </script>
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div id="orgchart" class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-4"></div>
+        </div>
     </div>
+
+    @push('scripts')
+    <script src="https://balkan.app/js/OrgChart.js"></script>
+    <script>
+        const chart = new OrgChart(document.getElementById("orgchart"), {
+            template: "ula",
+            enableSearch: true,
+            nodeBinding: {
+                field_0: "name",
+                field_1: "title"
+            },
+            nodes: @json($nodes)
+        });
+    </script>
+    @endpush
 </x-app-layout>

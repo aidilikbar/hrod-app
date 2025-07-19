@@ -23,10 +23,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
 
     // Org chart page
+    /*
     Route::get('/orgchart', function () {
         return view('orgchart');
     })->name('orgchart');
     //Route::get('/orgchart', [OrgChartController::class, 'index'])->name('orgchart.index');
+    */
+    Route::get('/orgchart', [OrgChartController::class, 'index'])->name('orgchart');
 });
 
 Route::middleware(['auth'])->group(function () {

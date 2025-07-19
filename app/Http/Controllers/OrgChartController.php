@@ -3,44 +3,35 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Position;
+use Illuminate\Support\Facades\DB;
 
 class OrgChartController extends Controller
 {
     public function index()
     {
-        // Fetch all root positions (parent_id is null)
-        $roots = Position::with(['employees', 'children.children.children.employees'])
-                         ->whereNull('parent_id')
-                         ->get();
+        $nodes = DB::table('employees as e')
+            ->join('employee_position as ep', function ($join) {
+                $join->on('e.id', '=', 'ep.employee_id')
+                     ->where('ep.is_primary', 1);
+            })
+            ->join('positions as p', 'ep.position_id', '=', 'p.id')
+            ->select('e.id', 'e.name', 'p.title', 'p.parent_id as pid')
+            ->get();
 
-        if ($roots->isEmpty()) {
-            return response()->json([]);
-        }
-
-        $allTrees = [];
-        foreach ($roots as $root) {
-            $this->flattenTree($root, null, $allTrees);
-        }
-
-        return response()->json($allTrees);
+        return view('orgchart', compact('nodes'));
     }
 
-    private function flattenTree($node, $parentId = null, &$result = [])
+    public function api()
     {
-        $employeeName = $node->employees->first()?->name ?? 'Unknown';
+        $nodes = DB::table('employees as e')
+            ->join('employee_position as ep', function ($join) {
+                $join->on('e.id', '=', 'ep.employee_id')
+                     ->where('ep.is_primary', 1);
+            })
+            ->join('positions as p', 'ep.position_id', '=', 'p.id')
+            ->select('e.id', 'e.name', 'p.title', 'p.parent_id as pid')
+            ->get();
 
-        $result[] = [
-            'id' => $node->id,
-            'pid' => $parentId,
-            'name' => $employeeName,
-            'title' => $node->title,
-        ];
-
-        foreach ($node->children as $child) {
-            $this->flattenTree($child, $node->id, $result);
-        }
-
-        return $result;
+        return response()->json($nodes);
     }
 }
