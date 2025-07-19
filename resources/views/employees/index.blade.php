@@ -1,79 +1,76 @@
 <x-app-layout>
-    <div class="py-6 px-8">
-        <h2 class="text-2xl font-bold text-gray-800 mb-6">Employees</h2>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            Employees
+        </h2>
+    </x-slot>
 
-        {{-- Search Form --}}
-        <form method="GET" action="{{ route('employees.index') }}" class="flex flex-wrap items-center gap-3 mb-6">
-            <input
-                type="text"
-                name="search"
-                value="{{ request('search') }}"
-                placeholder="Search by name or email"
-                class="flex-1 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring focus:ring-blue-200 focus:outline-none"
-            />
-            <button
-                type="submit"
-                class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2 rounded-md shadow-sm transition">
-                Search
-            </button>
-            <a href="{{ route('employees.create') }}"
-               class="ml-auto bg-blue-500 hover:bg-blue-600 text-white px-5 py-2 rounded-md font-medium shadow-sm">
-                + Add Employee
-            </a>
-        </form>
+    <div class="py-4">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center mb-4">
+                <form method="GET" action="{{ route('employees.index') }}" class="flex gap-2">
+                    <input type="text" name="search" value="{{ request('search') }}"
+                        class="border border-gray-300 rounded px-3 py-1"
+                        placeholder="Search by name or email" />
+                    <button type="submit"
+                        class="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700">Search</button>
+                </form>
+                <a href="{{ route('employees.create') }}"
+                    class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">+ Add New</a>
+            </div>
 
-        {{-- Table --}}
-        <div class="overflow-x-auto rounded shadow bg-white">
-            @php
-                function sortLink($column, $label) {
-                    $direction = request('sort') === $column && request('direction') === 'asc' ? 'desc' : 'asc';
-                    $arrow = request('sort') === $column ? (request('direction') === 'asc' ? '↑' : '↓') : '';
-                    return '<a href="?'.http_build_query(array_merge(request()->all(), ['sort' => $column, 'direction' => $direction])).'" class="hover:underline">'.$label.' '.$arrow.'</a>';
-                }
-            @endphp
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-100">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">{!! sortLink('name', 'Name') !!}</th>
-                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">{!! sortLink('email', 'Email') !!}</th>
-                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">{!! sortLink('position_id', 'Position') !!}</th>
-                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">{!! sortLink('department_id', 'Department') !!}</th>
-                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y">
-                    @forelse ($employees as $employee)
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-3">{{ $employee->name }}</td>
-                            <td class="px-6 py-3">{{ $employee->email }}</td>
-                            <td class="px-6 py-3">
-                                {{ $employee->positions->first()?->title ?? 'N/A' }}
-                            </td>
-                            <td class="px-6 py-3">
-                                {{ $employee->department_name ?? 'N/A' }}
-                            </td>
-                            <td class="px-6 py-3 space-x-3">
-                                <a href="{{ route('employees.edit', $employee) }}" class="text-blue-600 hover:underline">Edit</a>
-                                <form action="{{ route('employees.destroy', $employee) }}" method="POST"
-                                      class="inline"
-                                      onsubmit="return confirm('Are you sure?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-red-600 hover:underline">Delete</button>
-                                </form>
-                            </td>
-                        </tr>
-                    @empty
+            <div class="bg-white shadow overflow-x-auto sm:rounded-lg">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         <tr>
-                            <td colspan="4" class="px-6 py-4 text-center text-gray-500">No employees found.</td>
+                            <th class="px-4 py-3 text-left">#</th>
+                            <th class="px-4 py-3 text-left">Name</th>
+                            <th class="px-4 py-3 text-left">Email</th>
+                            <th class="px-4 py-3 text-left">Employee No.</th>
+                            <th class="px-4 py-3 text-left">Talent Mapping</th>
+                            <th class="px-4 py-3 text-left">Status</th>
+                            <th class="px-4 py-3 text-left">Company</th>
+                            <th class="px-4 py-3 text-left">Position</th>
+                            <th class="px-4 py-3 text-left">Department</th>
+                            <th class="px-4 py-3 text-left">Action</th>
                         </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200 text-sm">
+                        @foreach ($employees as $index => $employee)
+                            <tr>
+                                <td class="px-4 py-2">{{ $loop->iteration + ($employees->currentPage() - 1) * $employees->perPage() }}</td>
+                                <td class="px-4 py-2">{{ $employee->name }}</td>
+                                <td class="px-4 py-2">{{ $employee->email }}</td>
+                                <td class="px-4 py-2">{{ $employee->employee_number ?? '-' }}</td>
+                                <td class="px-4 py-2">{{ $employee->talent_mapping ?? '-' }}</td>
+                                <td class="px-4 py-2">{{ $employee->status ?? '-' }}</td>
+                                <td class="px-4 py-2">{{ $employee->company ?? '-' }}</td>
+                                <td class="px-4 py-2">
+                                    {{ optional($employee->positions->first())->title ?? '-' }}
+                                </td>
+                                <td class="px-4 py-2">
+                                    {{ optional($employee->positions->first()?->department)->name ?? '-' }}
+                                </td>
+                                <td class="px-4 py-2 flex gap-2">
+                                    <a href="{{ route('employees.edit', $employee->id) }}"
+                                    class="text-blue-600 hover:underline">Edit</a>
 
-            {{-- Pagination --}}
-            <div class="p-4 border-t bg-gray-50">
-                {{ $employees->withQueryString()->links() }}
+                                    <form method="POST" action="{{ route('employees.destroy', $employee->id) }}"
+                                        onsubmit="return confirm('Are you sure you want to delete this employee?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                                class="text-red-600 hover:underline">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+
+                <div class="p-4">
+                    {{ $employees->links() }}
+                </div>
             </div>
         </div>
     </div>

@@ -24,7 +24,7 @@ class EmployeeController extends Controller
             ->when($request->search, function ($query) use ($request) {
                 $query->where(function ($q) use ($request) {
                     $q->where('employees.name', 'like', '%' . $request->search . '%')
-                      ->orWhere('employees.email', 'like', '%' . $request->search . '%');
+                        ->orWhere('employees.email', 'like', '%' . $request->search . '%');
                 });
             })
             ->orderBy(
@@ -35,7 +35,19 @@ class EmployeeController extends Controller
             ->paginate(10)
             ->appends($request->only(['search', 'sort', 'direction']));
 
-        return view('employees.index', compact('employees'));
+        // Define the columns to pass to the view
+        $columns = [
+            'name' => 'Name',
+            'email' => 'Email',
+            'employee_number' => 'Employee No.',
+            'talent_mapping' => 'Talent Mapping',
+            'status' => 'Status',
+            'company' => 'Company',
+            'position_title' => 'Position',
+            'department_name' => 'Department',
+        ];
+
+        return view('employees.index', compact('employees', 'columns'));
     }
 
     public function create()

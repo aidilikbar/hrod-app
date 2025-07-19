@@ -1,64 +1,72 @@
 <x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            {{ __('Positions') }}
+        </h2>
+    </x-slot>
+
     <div class="py-6">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="mb-4 flex justify-between items-center">
+                <form method="GET" action="{{ route('positions.index') }}" class="flex items-center">
+                    <input type="text" name="search" placeholder="Search..." value="{{ request('search') }}"
+                           class="border border-gray-300 rounded px-4 py-2 mr-2">
+                    <button type="submit"
+                            class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">Search</button>
+                </form>
+                <a href="{{ route('positions.create') }}"
+                   class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                    + Create New Position
+                </a>
+            </div>
+
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                <a href="{{ route('positions.index', ['sort' => 'title', 'direction' => request('direction') === 'asc' ? 'desc' : 'asc'] + request()->except('page')) }}">
+                                    Title
+                                </a>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                <a href="{{ route('positions.index', ['sort' => 'department', 'direction' => request('direction') === 'asc' ? 'desc' : 'asc'] + request()->except('page')) }}">
+                                    Department
+                                </a>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                <a href="{{ route('positions.index', ['sort' => 'category', 'direction' => request('direction') === 'asc' ? 'desc' : 'asc'] + request()->except('page')) }}">
+                                    Category
+                                </a>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach ($positions as $position)
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">{{ $position->title }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">{{ $position->department->name ?? '-' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">{{ $position->category ?? '-' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <a href="{{ route('positions.edit', $position) }}"
+                                       class="text-indigo-600 hover:text-indigo-900">Edit</a>
+                                    <form action="{{ route('positions.destroy', $position) }}" method="POST"
+                                          class="inline-block" onsubmit="return confirm('Are you sure?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-red-600 hover:text-red-900 ml-2">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
 
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold">Positions</h2>
-                        <a href="{{ route('positions.create') }}" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">+ Add Position</a>
-                    </div>
-
-                    <form method="GET" action="{{ route('positions.index') }}" class="mb-4">
-                        <div class="flex">
-                            <input type="text" name="search" placeholder="Search by title..." value="{{ request('search') }}"
-                                   class="w-full rounded-l border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-r hover:bg-blue-700">Search</button>
-                        </div>
-                    </form>
-
-                    <div class="overflow-x-auto">
-                        @php
-                            function sortLink($column, $label) {
-                                $direction = request('sort') === $column && request('direction') === 'asc' ? 'desc' : 'asc';
-                                $arrow = request('sort') === $column ? (request('direction') === 'asc' ? '↑' : '↓') : '';
-                                return '<a href="?'.http_build_query(array_merge(request()->all(), ['sort' => $column, 'direction' => $direction])).'" class="hover:underline">'.$label.' '.$arrow.'</a>';
-                            }
-                        @endphp
-                        
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-100">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">{!! sortLink('title', 'Title') !!}</th>
-                                    <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">{!! sortLink('department_id', 'Department') !!}</th>
-                                    <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">{!! sortLink('parent_id', 'Parent') !!}</th>
-                                    <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @foreach ($positions as $position)
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap">{{ $position->title }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">{{ $position->department->name ?? '—' }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">{{ $position->parent->title ?? '—' }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <a href="{{ route('positions.edit', $position) }}" class="text-indigo-600 hover:underline">Edit</a>
-                                            <form action="{{ route('positions.destroy', $position) }}" method="POST" class="inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button class="text-red-600 hover:underline ml-2" onclick="return confirm('Are you sure?')">Delete</button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="mt-4">
-                        {{ $positions->links() }}
-                    </div>
-
+                <div class="px-6 py-4">
+                    {{ $positions->appends(request()->except('page'))->links() }}
                 </div>
             </div>
         </div>
