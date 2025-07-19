@@ -9,7 +9,21 @@ class Employee extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'email', 'photo'];
+    protected $fillable = [
+        'name',
+        'email',
+        'photo',
+        'employee_number',
+        'talent_mapping',
+        'status',
+        'company',
+    ];
+
+    protected $casts = [
+        'talent_mapping' => 'string',
+        'status' => 'string',
+        'company' => 'string',
+    ];
 
     public function positions()
     {

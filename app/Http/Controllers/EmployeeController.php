@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use App\Models\Position;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class EmployeeController extends Controller
 {
@@ -15,20 +16,20 @@ class EmployeeController extends Controller
 
         $employees = Employee::select('employees.*', 'positions.title as position_title', 'departments.name as department_name')
             ->leftJoin('employee_position as ep', function ($join) {
-                $join->on('employees.id', '=', 'ep.employee_id')
-                    ->where('ep.is_primary', 1);
+                $join->on('employees.id', '=', 'ep.employee_id')->where('ep.is_primary', 1);
             })
             ->leftJoin('positions', 'ep.position_id', '=', 'positions.id')
             ->leftJoin('departments', 'positions.department_id', '=', 'departments.id')
-            ->when($request->search, function ($q) use ($request) {
-                $q->where(function ($q) use ($request) {
+            ->with('positions')
+            ->when($request->search, function ($query) use ($request) {
+                $query->where(function ($q) use ($request) {
                     $q->where('employees.name', 'like', '%' . $request->search . '%')
-                        ->orWhere('employees.email', 'like', '%' . $request->search . '%');
+                      ->orWhere('employees.email', 'like', '%' . $request->search . '%');
                 });
             })
             ->orderBy(
-                $sortField === 'position_title' ? 'positions.title' :
-                ($sortField === 'department_name' ? 'departments.name' : "employees.$sortField"),
+                $sortField === 'position_id' ? 'positions.title' :
+                ($sortField === 'department_id' ? 'departments.name' : 'employees.' . $sortField),
                 $sortDirection
             )
             ->paginate(10)
@@ -39,32 +40,32 @@ class EmployeeController extends Controller
 
     public function create()
     {
-        $positions = Position::with('department')->get();
+        $positions = Position::all();
         return view('employees.create', compact('positions'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:employees,email',
-            'position_id' => 'nullable|exists:positions,id',
-            'photo' => 'nullable|image|max:2048',
+            'name'            => 'required|string|max:255',
+            'email'           => 'required|email|unique:employees',
+            'employee_number' => 'nullable|string|max:255',
+            'talent_mapping'  => 'nullable|in:High Potential,Mediocre,Deadwood',
+            'status'          => 'nullable|in:Permanent,Contract,Konpro,Freelance',
+            'company'         => 'nullable|in:KCM,UB,AIN,KIN,VCBL,KMN,Gramedia,Others',
+            'photo'           => 'nullable|image|max:2048',
+            'position_id'     => 'nullable|exists:positions,id',
         ]);
 
-        $employee = new Employee();
-        $employee->name = $request->name;
-        $employee->email = $request->email;
+        $data = $request->except(['photo', 'position_id']);
 
         if ($request->hasFile('photo')) {
-            $path = $request->file('photo')->store('photos', 'public');
-            $employee->photo = $path;
+            $data['photo'] = $request->file('photo')->store('photos', 'public');
         }
 
-        $employee->save();
+        $employee = Employee::create($data);
 
-        // 👇 Attach the selected position as primary
-        if ($request->position_id) {
+        if ($request->filled('position_id')) {
             $employee->positions()->attach($request->position_id, ['is_primary' => true]);
         }
 
@@ -80,30 +81,45 @@ class EmployeeController extends Controller
     public function update(Request $request, Employee $employee)
     {
         $request->validate([
-            'name' => 'required',
-            'email' => 'required|email|unique:employees,email,' . $employee->id,
-            'photo' => 'nullable|image',
-            'position_id' => 'required|exists:positions,id',
+            'name'            => 'required|string|max:255',
+            'email'           => 'required|email|unique:employees,email,' . $employee->id,
+            'employee_number' => 'nullable|string|max:255',
+            'talent_mapping'  => 'nullable|in:High Potential,Mediocre,Deadwood',
+            'status'          => 'nullable|in:Permanent,Contract,Konpro,Freelance',
+            'company'         => 'nullable|in:KCM,UB,AIN,KIN,VCBL,KMN,Gramedia,Others',
+            'photo'           => 'nullable|image|max:2048',
+            'position_id'     => 'nullable|exists:positions,id',
         ]);
 
-        $employee->update($request->only(['name', 'email']));
+        $data = $request->except(['photo', 'position_id']);
 
         if ($request->hasFile('photo')) {
-            $path = $request->file('photo')->store('photos', 'public');
-            $employee->photo = $path;
-            $employee->save();
+            if ($employee->photo) {
+                Storage::disk('public')->delete($employee->photo);
+            }
+            $data['photo'] = $request->file('photo')->store('photos', 'public');
         }
 
-        $employee->positions()->sync([
-            $request->position_id => ['is_primary' => true]
-        ]);
+        $employee->update($data);
+
+        if ($request->filled('position_id')) {
+            $employee->positions()->sync([
+                $request->position_id => ['is_primary' => true]
+            ]);
+        }
 
         return redirect()->route('employees.index')->with('success', 'Employee updated successfully.');
     }
 
     public function destroy(Employee $employee)
     {
+        if ($employee->photo) {
+            Storage::disk('public')->delete($employee->photo);
+        }
+
+        $employee->positions()->detach();
         $employee->delete();
-        return redirect()->route('employees.index');
+
+        return redirect()->route('employees.index')->with('success', 'Employee deleted successfully.');
     }
 }

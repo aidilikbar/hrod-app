@@ -9,7 +9,7 @@ class Position extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['title', 'department_id', 'parent_id'];
+    protected $fillable = ['title', 'department_id', 'parent_id', 'category'];
     protected $appends = ['employee_names'];
 
     public function department()

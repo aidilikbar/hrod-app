@@ -29,7 +29,8 @@ class PositionController extends Controller
         $departments = Department::orderBy('name')->get();
         return view('positions.create', [
             'departments' => Department::all(),
-            'positions' => Position::all(), // for parent selection
+            'positions' => Position::all(),
+            'categories' => ['Core', 'Leaning Core', 'Leaning Non Core', 'Non Core'],
         ]);
     }
 
@@ -39,6 +40,7 @@ class PositionController extends Controller
             'title' => 'required|string|max:255',
             'department_id' => 'nullable|exists:departments,id',
             'parent_id' => 'nullable|exists:positions,id',
+            'category' => 'nullable|in:Core,Leaning Core,Leaning Non Core',
         ]);
 
         Position::create($validated);
@@ -55,7 +57,8 @@ class PositionController extends Controller
         return view('positions.edit', [
             'position' => $position,
             'departments' => Department::all(),
-            'positions' => Position::all(), // for parent dropdown
+            'positions' => Position::all(),
+            'categories' => ['Core', 'Leaning Core', 'Leaning Non Core', 'Non Core'],
         ]);
     }
 
@@ -65,6 +68,7 @@ class PositionController extends Controller
             'title' => 'required|string|max:255',
             'department_id' => 'nullable|exists:departments,id',
             'parent_id' => 'nullable|exists:positions,id',
+            'category' => 'nullable|in:Core,Leaning Core,Leaning Non Core',
         ]);
 
         $position->update($validated);
